@@ -79,3 +79,8 @@ func chkid(id int, db *sql.DB) *sql.Rows {
 	}
 	return rows
 }
+
+func transaction(db *sql.DB, sender clients.Client, recipient clients.Client, transaction int) {
+	sender.Currency -= transaction
+	recipient.Currency += transaction
+}
