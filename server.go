@@ -5,21 +5,34 @@ import (
 	"net/http"
 
 	"MyServer/clients"
+	"MyServer/dbconnection"
+	//_ "github.com/lib/pq"
 )
 
 func main() {
 
-	var ali clients.Client = clients.Client{2, "Tanya", 12000}
-	var tanya clients.Client = clients.Client{1, "Ali", 12000}
-	fmt.Println(tanya.Currency, tanya.Id)
+	//var sender = clients.Client{2, "Tanya", 12000}
+	//var recipient = clients.Client{1, "Ali", 12000}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		//fmt.Fprintf(w, "Helo World!")
-		fmt.Fprintf(w, ali.Name, ali.Currency)
+		fmt.Fprintf(w, "Helo World!")
 	})
-	http.HandleFunc("/Ali/1200/", func(w http.ResponseWriter, r *http.Request) {
-		//fmt.Fprintf(w, "Helo World!")
-		ali.Currency = 0
-		fmt.Fprintf(w, ali.Name, ali.Currency)
+	http.HandleFunc("/transaction/", func(w http.ResponseWriter, r *http.Request) {
+		var sender = clients.Client{2, "Tanya", 0}
+		var recipient = clients.Client{1, "Ali", 0}
+
+		db := dbconnection.Connect()
+		result := dbconnection.Checks(db, sender, recipient, 1)
+		if result == 1 {
+			fmt.Fprintf(w, "такого клиента нет")
+		} else if result == 2 {
+			fmt.Fprintf(w, "недостаточно средств")
+		} else if result == 3 {
+			fmt.Fprintf(w, "такого получателя нет")
+		} else {
+
+		}
+		dbconnection.Clouse(db)
 	})
 	http.ListenAndServe(":80", nil)
 }
