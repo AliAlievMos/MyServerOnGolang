@@ -1,11 +1,9 @@
 package dbconnection
 
 import (
+	"MyServer/clients"
 	"database/sql"
 	"fmt"
-	"log"
-
-	"MyServer/clients"
 
 	_ "github.com/lib/pq"
 )
@@ -28,7 +26,6 @@ func Connect() *sql.DB {
 		fmt.Println("подключено!")
 
 	}
-
 	return db
 
 }
@@ -44,43 +41,54 @@ func Clouse(db *sql.DB) {
 
 func Checks(db *sql.DB, sender clients.Client, recipient clients.Client, transaction int) int8 {
 
-	rows := chkid(sender.Id, db)
-	if rows == nil {
+	fmt.Printf("%d переводит %d %d \n", sender.Id, recipient.Id, transaction)
+	bl, currency := chkId(sender.Id, db)
+	if bl == false {
 		return 1
 	}
 
-	for rows.Next() {
-		var currency int
-		if err := rows.Scan(&currency); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("%s на счету\n", string(rune(currency)))
-		if transaction > currency {
-			return 2
-		}
-
+	sender.Currency = currency
+	if sender.Currency < transaction {
+		return 2
 	}
 
-	rows1 := chkid(recipient.Id, db)
-	if rows1 == nil {
+	bl, currency1 := chkId(recipient.Id, db)
+	if bl == false {
 		return 3
 	}
+
+	recipient.Currency = currency1
+	transactionDo(db, sender, recipient, transaction)
 
 	return 0
 }
 
-func chkid(id int, db *sql.DB) *sql.Rows {
-	query := `SELECT currency FROM clients WHERE id = $1`
+func chkId(id int, db *sql.DB) (bool, int) {
 
-	rows, err := db.Query(query, id)
-	if err != nil {
-		fmt.Printf("%s ошибка! \n", err)
-		return nil
+	query := `SELECT currency FROM clients WHERE id = $1`
+	var currency int
+	bl := db.QueryRow(query, id).Scan(&currency)
+	//row := db.QueryRow(query, id)
+	fmt.Println("name")
+	fmt.Println(currency)
+	if bl == sql.ErrNoRows {
+		return false, currency
+	} else {
+		return true, currency
 	}
-	return rows
 }
 
-func transaction(db *sql.DB, sender clients.Client, recipient clients.Client, transaction int) {
+func transactionDo(db *sql.DB, sender clients.Client, recipient clients.Client, transaction int) {
 	sender.Currency -= transaction
 	recipient.Currency += transaction
+	fmt.Println("transaction")
+	query := `UPDATE clients SET currency = $1 WHERE id = $2;`
+	_, err := db.Query(query, sender.Currency, sender.Id)
+	if err != nil {
+		fmt.Printf("%s ошибка! \n", err)
+	}
+	_, err1 := db.Query(query, recipient.Currency, recipient.Id)
+	if err1 != nil {
+		fmt.Printf("%s ошибка! \n", err1)
+	}
 }

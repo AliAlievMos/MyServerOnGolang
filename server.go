@@ -3,6 +3,10 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
+
+	//"net/url"
 
 	"MyServer/clients"
 	"MyServer/dbconnection"
@@ -10,13 +14,29 @@ import (
 )
 
 func main() {
+
 	http.HandleFunc("/transaction/", func(w http.ResponseWriter, r *http.Request) {
 
-		var sender = clients.Client{2, "", 0}
-		var recipient = clients.Client{1, "", 0}
+		fmt.Println(r.URL.Path)
+		str := strings.Split(r.URL.Path[13:], "/")
+		idSender, err := strconv.Atoi(str[0])
+		if err != nil {
+			return
+		}
+		idRec, err := strconv.Atoi(str[2])
+		if err != nil {
+			return
+		}
+		trans, err := strconv.Atoi(str[1])
+		if err != nil {
+			return
+		}
+
+		var sender = clients.Client{idSender, "", 0}
+		var recipient = clients.Client{idRec, "", 0}
 
 		db := dbconnection.Connect()
-		result := dbconnection.Checks(db, sender, recipient, 1)
+		result := dbconnection.Checks(db, sender, recipient, trans)
 		if result == 1 {
 			fmt.Fprintf(w, "такого клиента нет")
 		} else if result == 2 {
@@ -24,9 +44,9 @@ func main() {
 		} else if result == 3 {
 			fmt.Fprintf(w, "такого получателя нет")
 		} else {
-
+			fmt.Fprintf(w, "успешно")
 		}
-		dbconnection.Clouse(db)
+		defer dbconnection.Clouse(db)
 	})
 	http.ListenAndServe(":80", nil)
 }
