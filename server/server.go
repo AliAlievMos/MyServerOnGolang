@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -6,15 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	//"net/url"
-
 	"MyServer/clients"
 	"MyServer/dbconnection"
-	//_ "github.com/lib/pq"
 )
 
-func main() {
-
+func Server() {
 	http.HandleFunc("/transaction/", func(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println(r.URL.Path)
@@ -31,9 +27,8 @@ func main() {
 		if err != nil {
 			return
 		}
-
-		var sender = clients.Client{idSender, "", 0}
-		var recipient = clients.Client{idRec, "", 0}
+		var sender = clients.Client{Id: idSender, Currency: trans}
+		var recipient = clients.Client{Id: idRec, Currency: trans}
 
 		db := dbconnection.Connect()
 		result := dbconnection.Checks(db, sender, recipient, trans)
